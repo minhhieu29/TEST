@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Techcombank Mobile Chatbot Prototype</title>
+    <title>Techcombank AI Chatbot - Trợ lý Ảo Hỏi đáp Khách hàng</title>
+    <meta name="description" content="Chatbot AI hỏi đáp trực tuyến Techcombank - Trợ lý ảo thông minh tra cứu FAQ ngân hàng, dịch vụ thẻ, vay mượn, tiết kiệm, bảo hiểm.">
     <!-- CSS Link -->
     <link rel="stylesheet" href="style.css">
     <!-- FontAwesome for Icons -->
@@ -250,8 +251,21 @@
                             <p>Đang hoạt động (AI)</p>
                         </div>
                     </div>
-                    <div class="close-chat">
-                        <i class="fa-solid fa-xmark"></i>
+                    <div class="chat-header-right">
+                        <div class="settings-btn" id="openSettingsBtn" title="Cài đặt API">
+                            <i class="fa-solid fa-gear"></i>
+                        </div>
+                        <div class="close-chat">
+                            <i class="fa-solid fa-xmark"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tool Indicator (ReAct thinking/acting) -->
+                <div class="tool-indicator" id="toolIndicator" style="display:none;">
+                    <div class="tool-indicator-content">
+                        <div class="tool-spinner"></div>
+                        <span class="tool-indicator-text">Đang suy luận...</span>
                     </div>
                 </div>
 
@@ -262,13 +276,9 @@
 
                 <!-- Suggested Questions (Quick Reply Chips) -->
                 <div class="suggestions-wrapper">
-                    <div class="suggestions-title">CÂU HỎI THƯỜNG GẶP (FAQ):</div>
+                    <div class="suggestions-title">💡 CÂU HỎI THƯỜNG GẶP:</div>
                     <div class="suggestions-list">
-                        <div class="suggestion-chip">Cách cập nhật sinh trắc học?</div>
-                        <div class="suggestion-chip">Phí chuyển tiền là bao nhiêu?</div>
-                        <div class="suggestion-chip">Lãi suất gửi tiết kiệm online?</div>
-                        <div class="suggestion-chip">Mất thẻ phải làm sao?</div>
-                        <div class="suggestion-chip">Giờ mở cửa chi nhánh?</div>
+                        <!-- Dynamically populated by app.js -->
                     </div>
                 </div>
 
@@ -407,34 +417,69 @@
 
     <!-- External Project Info & Instructions Panel -->
     <div class="web-info-panel">
-        <h2>Techcombank Q&A Bot Prototype</h2>
-        <span class="feature-tag">Day 05 AI Product Labs</span>
+        <h2>Techcombank Q&A Bot</h2>
+        <span class="feature-tag">🤖 TF-IDF AI Search Engine</span>
         
-        <p>Hệ thống mô phỏng tính năng <strong>Chatbot AI Hỏi đáp trực tuyến</strong> được tích hợp ngay trên ứng dụng di động Techcombank. 
-        Prototype hoạt động dựa trên cơ sở tri thức (Knowledge Base) cào trực tiếp từ các chuyên mục hỗ trợ chính thức của Techcombank.</p>
+        <p>Chatbot AI tra cứu <strong>toàn bộ cơ sở tri thức Techcombank</strong> sử dụng thuật toán <strong>TF-IDF + Cosine Similarity</strong> để tìm kiếm câu trả lời chính xác nhất cho mỗi câu hỏi của khách hàng.</p>
         
         <div class="faq-stats">
             <div class="stat-box">
-                <div class="stat-num" id="faq-count">10</div>
-                <div class="stat-label">Câu hỏi FAQ thực tế</div>
+                <div class="stat-num" id="faq-count">---</div>
+                <div class="stat-label">Câu hỏi FAQ</div>
             </div>
             <div class="stat-box">
-                <div class="stat-num">100%</div>
-                <div class="stat-label">Ngôn ngữ Tiếng Việt</div>
+                <div class="stat-num">TF-IDF</div>
+                <div class="stat-label">Search Engine</div>
             </div>
         </div>
 
-        <h3 style="font-size: 15px; margin-bottom: 10px; font-weight: 600;">Hướng dẫn kiểm thử (Test Script):</h3>
+        <h3 style="font-size: 15px; margin-bottom: 10px; font-weight: 600;">Hướng dẫn kiểm thử:</h3>
         <ul class="instruction-list">
-            <li><strong>Mở Chatbot:</strong> Nhấn vào nút chat màu đỏ nhấp nháy <i class="fa-solid fa-comments" style="color:var(--primary-color);"></i> ở góc phải màn hình điện thoại.</li>
-            <li><strong>Tra cứu FAQ nhanh:</strong> Click thử các thẻ gợi ý (Sinh trắc học, Biểu phí, Lãi suất) để xem AI phản hồi.</li>
-            <li><strong>Happy Path (AI trả lời chuẩn):</strong> Gõ câu hỏi: <em>"Lãi suất gửi tiết kiệm online?"</em> hoặc <em>"Phí chuyển tiền?"</em>.</li>
-            <li><strong>Lỗi bảo mật (Emergency Mode):</strong> Thử gõ câu chứa từ khóa nhạy cảm: <em>"tôi bị lừa đảo mất tiền"</em> hoặc <em>"tài khoản bị hack"</em> để xem cảnh báo đỏ khẩn cấp.</li>
-            <li><strong>Độ tin cậy thấp (Low-confidence):</strong> Gõ câu hỏi ngoài phạm vi như <em>"chứng khoán là gì?"</em>, AI sẽ đề xuất nút <strong>[Kết nối hỗ trợ viên]</strong>. Nhấn nút để giả lập Điện thoại viên Thu Trang tham gia hỗ trợ.</li>
+            <li><strong>Mở Chatbot:</strong> Nhấn nút chat <i class="fa-solid fa-comments" style="color:var(--primary-color);"></i> đỏ nhấp nháy góc phải.</li>
+            <li><strong>Happy Path:</strong> Gõ <em>"Quên PIN thẻ phải làm gì?"</em> hoặc <em>"Cách mở tài khoản?"</em> — AI trả lời + hiện <strong>độ tin cậy</strong> + <strong>câu hỏi liên quan</strong>.</li>
+            <li><strong>Emergency:</strong> Gõ <em>"tôi bị lừa đảo"</em> hoặc <em>"tài khoản bị hack"</em> — hiện cảnh báo bảo mật khẩn cấp.</li>
+            <li><strong>Low-confidence:</strong> Gõ <em>"chứng khoán là gì?"</em> — AI đề xuất <strong>[Kết nối hỗ trợ viên]</strong>.</li>
+            <li><strong>Gợi ý nhanh:</strong> Click các chip gợi ý FAQ ở dưới cùng.</li>
         </ul>
     </div>
 
+    <!-- Settings Modal Overlay -->
+    <div class="settings-modal" id="settingsModal" style="display:none;">
+        <div class="settings-modal-content">
+            <div class="settings-modal-header">
+                <h3><i class="fa-solid fa-gear"></i> Cấu hình OpenAI API</h3>
+                <span class="close-settings" id="closeSettingsBtn">&times;</span>
+            </div>
+            <div class="settings-modal-body">
+                <p class="settings-desc">Nhập OpenAI API Key để kích hoạt chatbot thông minh sử dụng mô hình ReAct Agent. API Key của bạn được lưu an toàn trong trình duyệt (localStorage).</p>
+                
+                <div class="settings-group">
+                    <label for="apiKeyInput">OpenAI API Key:</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="apiKeyInput" placeholder="sk-proj-..." />
+                        <i class="fa-regular fa-eye-slash toggle-api-key-eye" id="toggleApiKeyVisibility"></i>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <label for="modelSelect">Mô hình GPT:</label>
+                    <select id="modelSelect">
+                        <option value="gpt-4o-mini" selected>gpt-4o-mini (Khuyên dùng - Nhanh & Tiết kiệm)</option>
+                        <option value="gpt-4o">gpt-4o (Thông minh nhất)</option>
+                        <option value="gpt-3.5-turbo">gpt-3.5-turbo (Cũ hơn)</option>
+                    </select>
+                </div>
+                
+                <div class="settings-actions">
+                    <button class="settings-save-btn" id="saveSettingsBtn">Lưu Cấu Hình</button>
+                    <button class="settings-clear-btn" id="clearSettingsBtn">Xóa Key</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Application Script Link -->
+    <script src="config.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

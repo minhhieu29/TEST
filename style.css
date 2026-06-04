@@ -1065,6 +1065,121 @@ body {
 }
 
 /* ========================================== */
+/* Enhanced Chatbot UI: Confidence, Categories, Related Q's */
+/* ========================================== */
+
+/* Answer metadata bar */
+.answer-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    flex-wrap: wrap;
+}
+
+/* Confidence badge */
+.confidence-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+
+.confidence-high {
+    background-color: rgba(46, 213, 115, 0.1);
+    color: #27ae60;
+    border: 1px solid rgba(46, 213, 115, 0.25);
+}
+
+.confidence-medium {
+    background-color: rgba(255, 193, 7, 0.1);
+    color: #d68910;
+    border: 1px solid rgba(255, 193, 7, 0.25);
+}
+
+.confidence-low {
+    background-color: rgba(231, 76, 60, 0.08);
+    color: #c0392b;
+    border: 1px solid rgba(231, 76, 60, 0.2);
+}
+
+/* Category tag */
+.category-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 600;
+    background-color: rgba(52, 152, 219, 0.08);
+    color: #2980b9;
+    border: 1px solid rgba(52, 152, 219, 0.15);
+}
+
+/* Related Questions Section */
+.related-questions {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.related-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #555555;
+    margin-bottom: 6px;
+}
+
+.related-chip {
+    display: block;
+    padding: 7px 12px;
+    margin-bottom: 5px;
+    background-color: #f0f2f5;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    border-radius: 12px;
+    font-size: 11px;
+    color: #333333;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    line-height: 1.35;
+}
+
+.related-chip:last-child {
+    margin-bottom: 0;
+}
+
+.related-chip:hover {
+    background-color: rgba(218, 37, 29, 0.06);
+    border-color: rgba(218, 37, 29, 0.2);
+    color: var(--primary-color);
+    transform: translateX(3px);
+}
+
+/* Agent Transfer Alert */
+.agent-transfer-alert {
+    text-align: center;
+    font-size: 11px;
+    color: #888888;
+    margin: 12px 0;
+    padding: 8px 14px;
+    background-color: rgba(76, 209, 55, 0.06);
+    border: 1px dashed rgba(76, 209, 55, 0.3);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    animation: fade-in-up 0.3s ease forwards;
+}
+
+/* ========================================== */
 /* Sidebar Navigation View - Light / White theme */
 /* ========================================== */
 .sidebar-backdrop {
@@ -1597,4 +1712,339 @@ body {
         margin-left: 0;
         margin-top: 30px;
     }
+}
+
+/* ========================================== */
+/* OpenAI Settings Modal & ReAct UI Elements */
+/* ========================================== */
+
+/* Settings Button */
+.settings-btn {
+    font-size: 16px;
+    color: #555555;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.settings-btn:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: var(--primary-color);
+}
+
+/* Modal Overlay */
+.settings-modal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 400;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: fade-in 0.25s ease-out;
+    backdrop-filter: blur(4px);
+}
+
+.settings-modal-content {
+    background-color: #ffffff;
+    width: 88%;
+    max-width: 340px;
+    border-radius: 20px;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    animation: scale-up 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.settings-modal-header {
+    background-color: #f8f9fa;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.settings-modal-header h3 {
+    margin: 0;
+    font-size: 15px;
+    color: #111111;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.settings-modal-header h3 i {
+    color: var(--primary-color);
+}
+
+.close-settings {
+    font-size: 20px;
+    color: #888888;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.close-settings:hover {
+    color: #111111;
+}
+
+.settings-modal-body {
+    padding: 20px;
+}
+
+.settings-desc {
+    font-size: 11px;
+    color: #666666;
+    line-height: 1.5;
+    margin-bottom: 16px;
+    margin-top: 0;
+}
+
+.settings-group {
+    margin-bottom: 16px;
+}
+
+.settings-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: #333333;
+    margin-bottom: 6px;
+}
+
+.password-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.settings-group input,
+.settings-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 10px;
+    font-size: 12px;
+    outline: none;
+    transition: all 0.2s;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.settings-group input[type="password"],
+.settings-group input[type="text"] {
+    padding-right: 36px;
+}
+
+.settings-group input:focus,
+.settings-group select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(218, 37, 29, 0.1);
+}
+
+.toggle-api-key-eye {
+    position: absolute;
+    right: 12px;
+    color: #888888;
+    cursor: pointer;
+    font-size: 14px;
+    transition: color 0.2s;
+}
+
+.toggle-api-key-eye:hover {
+    color: #111111;
+}
+
+.settings-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+}
+
+.settings-save-btn {
+    flex: 1;
+    background-color: var(--primary-color);
+    color: #ffffff;
+    border: none;
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.settings-save-btn:hover {
+    background-color: var(--primary-dark);
+}
+
+.settings-clear-btn {
+    background-color: #f1f2f6;
+    color: #ff4757;
+    border: 1px solid rgba(255, 71, 87, 0.1);
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.settings-clear-btn:hover {
+    background-color: #ffe0e6;
+}
+
+/* Tool indicator styling */
+.tool-indicator {
+    padding: 8px 16px;
+    background-color: #fcfcfd;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    animation: slide-down 0.2s ease-out;
+}
+
+.tool-indicator-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tool-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(218, 37, 29, 0.1);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+}
+
+.tool-indicator-text {
+    font-size: 11px;
+    color: #666666;
+    font-weight: 600;
+    font-style: italic;
+}
+
+/* ReAct Process Container in Message Bubble */
+.react-steps-container {
+    margin-bottom: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+    overflow: hidden;
+    background-color: #fafbfc;
+}
+
+.react-steps-header {
+    background-color: #f1f2f6;
+    padding: 6px 12px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #57606f;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s;
+}
+
+.react-steps-header:hover {
+    background-color: #e4e7eb;
+}
+
+.react-steps-header i {
+    font-size: 10px;
+    transition: transform 0.2s;
+}
+
+.react-steps-body {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-top: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.react-step {
+    font-size: 10.5px;
+    line-height: 1.4;
+    border-left: 2px solid #ced6e0;
+    padding-left: 8px;
+    margin-left: 4px;
+}
+
+.react-step-thought {
+    color: #2f3542;
+}
+
+.react-step-thought strong {
+    color: #57606f;
+}
+
+.react-step-action {
+    color: #da251d;
+    background-color: rgba(218, 37, 29, 0.03);
+    border-left-color: #da251d;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.react-step-observation {
+    color: #2ed573;
+    background-color: rgba(46, 213, 115, 0.03);
+    border-left-color: #2ed573;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: monospace;
+    white-space: pre-wrap;
+    max-height: 100px;
+    overflow-y: auto;
+    font-size: 9.5px;
+}
+
+/* Animations */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes slide-down {
+    from { transform: translateY(-10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes scale-up {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+/* Streaming Typing Cursor */
+.streaming-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 12px;
+    background-color: #111111;
+    margin-left: 2px;
+    animation: blink 0.8s infinite;
+    vertical-align: middle;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
 }
