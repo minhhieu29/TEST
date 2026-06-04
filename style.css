@@ -2048,3 +2048,167 @@ body {
     0%, 100% { opacity: 0; }
     50% { opacity: 1; }
 }
+
+/* ========================================== */
+/* Agent Busy Alert (Mock Error Case)         */
+/* ========================================== */
+.agent-busy-alert {
+    background: linear-gradient(135deg, #fff8e1, #fff3cd);
+    border: 1px solid #ffca28;
+    border-radius: 14px;
+    padding: 16px;
+    text-align: center;
+    animation: shake-subtle 0.5s ease-out;
+}
+
+.agent-busy-icon {
+    font-size: 36px;
+    margin-bottom: 8px;
+}
+
+.agent-busy-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: #e65100;
+    margin-bottom: 8px;
+    letter-spacing: -0.2px;
+}
+
+.agent-busy-desc {
+    font-size: 12px;
+    color: #5d4037;
+    line-height: 1.5;
+    margin-bottom: 6px;
+}
+
+.agent-busy-question {
+    font-size: 12px;
+    color: #4e342e;
+    font-weight: 600;
+    margin-bottom: 14px;
+}
+
+.agent-busy-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.agent-busy-btn {
+    padding: 10px 14px;
+    border: none;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.agent-busy-btn-yes {
+    background-color: #ffffff;
+    color: #2e7d32;
+    border: 1.5px solid #66bb6a;
+}
+
+.agent-busy-btn-yes:hover:not(:disabled) {
+    background-color: #e8f5e9;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(46, 125, 50, 0.15);
+}
+
+.agent-busy-btn-no {
+    background-color: #ffffff;
+    color: #e65100;
+    border: 1.5px solid #ffb74d;
+}
+
+.agent-busy-btn-no:hover:not(:disabled) {
+    background-color: #fff3e0;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(230, 81, 0, 0.15);
+}
+
+@keyframes shake-subtle {
+    0%, 100% { transform: translateX(0); }
+    15% { transform: translateX(-4px); }
+    30% { transform: translateX(4px); }
+    45% { transform: translateX(-3px); }
+    60% { transform: translateX(3px); }
+    75% { transform: translateX(-1px); }
+}
+
+/* ========================================== */
+/* Card Lock Success (via Agent)              */
+/* ========================================== */
+.card-lock-success {
+    background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+    border: 1px solid #66bb6a;
+    border-radius: 14px;
+    padding: 18px 16px;
+    text-align: center;
+    animation: card-lock-appear 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.card-lock-icon {
+    font-size: 40px;
+    margin-bottom: 8px;
+    animation: lock-bounce 0.6s ease-out 0.3s;
+}
+
+.card-lock-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: #2e7d32;
+    letter-spacing: 0.5px;
+    margin-bottom: 14px;
+}
+
+.card-lock-details {
+    background-color: rgba(255, 255, 255, 0.7);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 12px;
+    text-align: left;
+}
+
+.card-lock-row {
+    font-size: 11.5px;
+    color: #333333;
+    padding: 4px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.card-lock-row:last-child {
+    border-bottom: none;
+}
+
+.card-lock-row span {
+    color: #666666;
+    font-weight: 500;
+}
+
+.card-lock-info {
+    font-size: 10.5px;
+    color: #4e342e;
+    line-height: 1.5;
+    padding: 8px 12px;
+    background-color: rgba(255, 255, 255, 0.5);
+    border-radius: 8px;
+    text-align: left;
+}
+
+@keyframes card-lock-appear {
+    from { transform: scale(0.85); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes lock-bounce {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.25); }
+    60% { transform: scale(0.95); }
+    100% { transform: scale(1); }
+}

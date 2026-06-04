@@ -11,9 +11,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const chatInput = document.querySelector(".chat-input");
     const sendBtn = document.querySelector(".send-btn");
     const suggestionsList = document.querySelector(".suggestions-list");
-    
+
     let faqDatabase = [];
     let isAgentConnected = false;
+    let agentBusyMode = true;
+    let pendingCardLock = false;
 
     // ===== Settings Modal Logic =====
     const settingsModal = document.getElementById("settingsModal");
@@ -93,7 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
         saveSettingsBtn.addEventListener("click", () => {
             const key = apiKeyInput.value.trim();
             const model = modelSelect.value;
-            
+
             if (key) {
                 localStorage.setItem("openai_api_key", key);
                 localStorage.setItem("openai_model", model);
@@ -176,7 +178,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const tf = {};
             tokens.forEach(t => { tf[t] = (tf[t] || 0) + 1; });
             const maxTF = Math.max(...Object.values(tf), 1);
-            
+
             const vector = {};
             Object.keys(tf).forEach(term => {
                 vector[term] = (tf[term] / maxTF) * (this.idf[term] || 0);
@@ -218,12 +220,12 @@ document.addEventListener("DOMContentLoaded", () => {
             results.forEach(r => {
                 const qClean = removeVietnameseTones(r.faq.question.toLowerCase());
                 const queryClean = removeVietnameseTones(query.toLowerCase());
-                
+
                 // Bonus for substring match in question
                 if (qClean.includes(queryClean) || queryClean.includes(qClean)) {
                     r.score += 0.3;
                 }
-                
+
                 // Bonus for matching important keywords
                 queryTokens.forEach(token => {
                     if (token.length >= 3 && qClean.includes(token)) {
@@ -247,7 +249,7 @@ document.addEventListener("DOMContentLoaded", () => {
         .then(data => {
             faqDatabase = data;
             console.log("✅ FAQ Database loaded:", faqDatabase.length, "items.");
-            
+
             // Build TF-IDF search index
             searchEngine.buildIndex(faqDatabase);
             console.log("✅ TF-IDF Search Index built with", searchEngine.vocabulary.size, "unique terms.");
@@ -302,7 +304,7 @@ document.addEventListener("DOMContentLoaded", () => {
     chatTrigger.addEventListener("click", () => {
         chatView.classList.add("active");
         chatTrigger.style.transform = "scale(0)";
-        
+
         // Send initial greeting if chat is empty
         if (chatMessages.children.length <= 0) {
             setTimeout(() => {
@@ -385,10 +387,10 @@ document.addEventListener("DOMContentLoaded", () => {
     function sendMessage() {
         const queryText = chatInput.value.trim();
         if (!queryText) return;
-        
+
         addUserMessage(queryText);
         chatInput.value = "";
-        
+
         processQuery(queryText);
     }
 
@@ -409,7 +411,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function addBotMessage(text, isEmergency = false, customHtml = "") {
         const timeStr = getCurrentTime();
         const botMsgId = "bot-msg-" + Date.now();
-        
+
         const msgHtml = `
             <div class="message bot" id="${botMsgId}">
                 <div class="msg-bubble ${isEmergency ? 'emergency-alert' : ''}">
@@ -430,19 +432,19 @@ document.addEventListener("DOMContentLoaded", () => {
             const botMessageEl = document.getElementById(botMsgId);
             if (!botMessageEl) return;
             const bubbleEl = botMessageEl.querySelector(".msg-bubble");
-            
+
             // Format bold markdown-like notation to HTML strong tags
             let formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
             // Format newlines
             formattedText = formattedText.replace(/\n/g, '<br>');
-            
+
             bubbleEl.innerHTML = ""; // Clear indicator
-            
+
             if (isEmergency) {
                 bubbleEl.innerHTML = formattedText;
             } else {
-                bubbleEl.innerHTML = formattedText; 
-                
+                bubbleEl.innerHTML = formattedText;
+
                 if (customHtml) {
                     bubbleEl.insertAdjacentHTML("beforeend", customHtml);
                 }
@@ -477,11 +479,11 @@ Lưu ý quan trọng:
     function processQuery(query) {
         // Normalizing search input
         const cleanQuery = removeVietnameseTones(query.toLowerCase());
-        
+
         // 1. Check for Emergency Security Keywords
         const emergencyKeywords = ["hack", "bi lua", "lua dao", "mat tien", "mat acc", "lo otp", "lo mat khau", "bi danh cap", "trom tien", "chiem doat"];
         const hasEmergency = emergencyKeywords.some(keyword => cleanQuery.includes(keyword));
-        
+
         if (hasEmergency) {
             const emergencyText = `
                 <div class="emergency-title">⚠️ CẢNH BÁO BẢO MẬT KHẨN CẤP</div>
@@ -495,6 +497,30 @@ Lưu ý quan trọng:
 
         // 2. If Agent is connected, bypass bot
         if (isAgentConnected) {
+            const cleanQueryAgent = removeVietnameseTones(query.toLowerCase());
+
+            // Check for card lock confirmation
+            if (pendingCardLock) {
+                const confirmKeywords = ["co", "dong y", "xac nhan", "ok", "yes"];
+                const cancelKeywords = ["khong", "huy", "thoi", "cancel"];
+
+                if (confirmKeywords.some(k => cleanQueryAgent.includes(k))) {
+                    showCardLockSuccess();
+                    return;
+                } else if (cancelKeywords.some(k => cleanQueryAgent.includes(k))) {
+                    pendingCardLock = false;
+                    addBotMessage("Dạ, tôi đã hủy yêu cầu khóa thẻ. Quý khách có cần hỗ trợ gì thêm không ạ?");
+                    return;
+                }
+            }
+
+            // Check for card lock request keywords
+            const cardLockKeywords = ["khoa the", "lock card", "mat the", "khoa tai khoan"];
+            if (cardLockKeywords.some(k => cleanQueryAgent.includes(k))) {
+                simulateAgentCardLockFlow();
+                return;
+            }
+
             simulateAgentResponse();
             return;
         }
@@ -517,7 +543,7 @@ Lưu ý quan trọng:
             const confidence = Math.min(Math.round(bestResult.score * 100), 99);
             const confidenceLevel = confidence >= 60 ? 'high' : confidence >= 30 ? 'medium' : 'low';
             const confidenceEmoji = confidence >= 60 ? '🟢' : confidence >= 30 ? '🟡' : '🔴';
-            
+
             let answerText = bestResult.faq.answer;
             answerText = answerText.replace(/\n\s*\n/g, '\n').trim();
 
@@ -538,8 +564,8 @@ Lưu ý quan trọng:
                 relatedHtml = `<div class="related-questions">
                     <div class="related-title">📌 Câu hỏi liên quan:</div>`;
                 relatedResults.forEach(r => {
-                    const shortQ = r.faq.question.length > 65 
-                        ? r.faq.question.substring(0, 65) + '...' 
+                    const shortQ = r.faq.question.length > 65
+                        ? r.faq.question.substring(0, 65) + '...'
                         : r.faq.question;
                     relatedHtml += `<div class="related-chip" onclick="window.askRelatedQuestion('${escapeHtml(r.faq.question).replace(/'/g, "\\'")}')">${shortQ}</div>`;
                 });
@@ -579,19 +605,19 @@ Lưu ý quan trọng:
 
         // Create empty bot message bubble with Reasoning Logs inside
         const botMsgId = createBotMessageShell();
-        
+
         while (loopCount < maxLoops) {
             loopCount++;
             showToolIndicator(`Đang suy nghĩ (Vòng ${loopCount})...`);
-            
+
             let isFinalAnswer = false;
             let finalAnswerStarted = false;
             let accumulatedText = "";
-            
+
             try {
                 await callOpenAIStream(agentMessages, (chunk, fullText) => {
                     accumulatedText = fullText;
-                    
+
                     // Check if we hit "Final Answer:" in the stream
                     if (!finalAnswerStarted) {
                         const finalAnswerIdx = fullText.indexOf("Final Answer:");
@@ -601,7 +627,7 @@ Lưu ý quan trọng:
                             hideToolIndicator();
                             collapseReasoningLog(botMsgId);
                             clearTypingIndicator(botMsgId);
-                            
+
                             const initialText = fullText.substring(finalAnswerIdx + "Final Answer:".length);
                             updateFinalAnswerText(botMsgId, initialText);
                         }
@@ -611,21 +637,21 @@ Lưu ý quan trọng:
                         updateFinalAnswerText(botMsgId, currentText);
                     }
                 });
-                
+
                 hideToolIndicator();
-                
+
                 const parsed = parseReActResponse(accumulatedText);
-                
+
                 if (parsed.thought) {
                     updateThoughtStep(botMsgId, parsed.thought);
                 }
-                
+
                 if (parsed.action) {
                     appendActionStep(botMsgId, parsed.action.name, parsed.action.arg);
-                    
+
                     let observation = "";
                     showToolIndicator(`Đang chạy: ${parsed.action.name}...`);
-                    
+
                     if (parsed.action.name === "search_faq") {
                         observation = runSearchFAQ(parsed.action.arg);
                     } else if (parsed.action.name === "search_web") {
@@ -637,40 +663,40 @@ Lưu ý quan trọng:
                     } else {
                         observation = `Lỗi: Không tìm thấy công cụ "${parsed.action.name}".`;
                     }
-                    
+
                     appendObservationStep(botMsgId, observation);
-                    
+
                     agentMessages.push({ role: "assistant", content: accumulatedText });
                     agentMessages.push({ role: "user", content: `Observation: ${observation}` });
-                    
+
                 } else {
                     if (!isFinalAnswer) {
                         clearTypingIndicator(botMsgId);
                         updateFinalAnswerText(botMsgId, accumulatedText);
                     }
                     removeStreamingCursor(botMsgId);
-                    
+
                     // Add related questions/metadata to bottom of bubble
                     addRelatedQuestionsMetadata(botMsgId, query);
                     break;
                 }
-                
+
             } catch (err) {
                 console.error("Error in ReAct loop:", err);
                 hideToolIndicator();
                 clearTypingIndicator(botMsgId);
-                
+
                 const textContent = document.querySelector(`#${botMsgId} .msg-text-content`);
                 if (textContent) {
                     textContent.innerHTML = `<span style="color:#ff4757;">⚠️ Lỗi API: ${escapeHtml(err.message)}</span><br><br>Đang tự động chuyển về chế độ tra cứu local...`;
                 }
-                
+
                 setTimeout(() => {
                     const errBubble = document.getElementById(botMsgId);
                     if (errBubble) errBubble.remove();
                     runLocalSearchFallback(query);
                 }, 2000);
-                
+
                 return;
             }
         }
@@ -680,7 +706,7 @@ Lưu ý quan trọng:
     function createBotMessageShell() {
         const timeStr = getCurrentTime();
         const botMsgId = "bot-msg-" + Date.now();
-        
+
         const msgHtml = `
             <div class="message bot" id="${botMsgId}">
                 <div class="msg-bubble">
@@ -709,7 +735,7 @@ Lưu ý quan trọng:
         return botMsgId;
     }
 
-    window.toggleReactSteps = function(headerEl) {
+    window.toggleReactSteps = function (headerEl) {
         const body = headerEl.nextElementSibling;
         const icon = headerEl.querySelector("i");
         if (body.style.display === "none") {
@@ -725,10 +751,10 @@ Lưu ý quan trọng:
     function updateThoughtStep(botMsgId, thought) {
         const body = document.querySelector(`#${botMsgId} .react-steps-body`);
         if (!body) return;
-        
+
         const placeholder = body.querySelector(".react-steps-progress-info");
         if (placeholder) placeholder.remove();
-        
+
         let thoughtEl = body.querySelector(".react-step-thought");
         if (!thoughtEl) {
             thoughtEl = document.createElement("div");
@@ -742,7 +768,7 @@ Lưu ý quan trọng:
     function appendActionStep(botMsgId, name, arg) {
         const body = document.querySelector(`#${botMsgId} .react-steps-body`);
         if (!body) return;
-        
+
         const actionEl = document.createElement("div");
         actionEl.className = "react-step react-step-action";
         actionEl.innerHTML = `<strong>Action:</strong> Gọi công cụ <code>${escapeHtml(name)}</code> với tham số <code>"${escapeHtml(arg)}"</code>`;
@@ -753,7 +779,7 @@ Lưu ý quan trọng:
     function appendObservationStep(botMsgId, obs) {
         const body = document.querySelector(`#${botMsgId} .react-steps-body`);
         if (!body) return;
-        
+
         const obsEl = document.createElement("div");
         obsEl.className = "react-step react-step-observation";
         obsEl.innerHTML = `<strong>Observation:</strong><br>${escapeHtml(obs)}`;
@@ -776,7 +802,7 @@ Lưu ý quan trọng:
     function updateFinalAnswerText(botMsgId, text) {
         const textContent = document.querySelector(`#${botMsgId} .msg-text-content`);
         if (!textContent) return;
-        
+
         let formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
         formattedText = formattedText.replace(/\n/g, '<br>');
         textContent.innerHTML = formattedText + `<span class="streaming-cursor"></span>`;
@@ -807,7 +833,7 @@ Lưu ý quan trọng:
             "sinh trac hoc": "https://techcombank.com/thong-bao-huong-dan-cap-nhat-sinh-trac-hoc",
             "chuyen tien": "https://techcombank.com/bieu-phi-dich-vu-chuyen-tien"
         };
-        
+
         let matchedLinks = [];
         const cleanQuery = removeVietnameseTones(query.toLowerCase());
         for (const [key, value] of Object.entries(links)) {
@@ -815,14 +841,14 @@ Lưu ý quan trọng:
                 matchedLinks.push(`- Liên kết hữu ích: [Xem thông tin về ${key}](${value})`);
             }
         }
-        
+
         let obs = `Kết quả tìm kiếm web cho "${query}":\n`;
         if (matchedLinks.length > 0) {
             obs += matchedLinks.join("\n") + "\n";
         } else {
             obs += `- Liên kết tham khảo: [Trang chủ Techcombank](https://techcombank.com)\n`;
         }
-        
+
         if (results.length > 0) {
             obs += `Dữ liệu liên quan tìm được trên trang tin:\n` + results.map(r => `- ${r.faq.question}: ${r.faq.answer.substring(0, 150)}...`).join("\n");
         }
@@ -839,7 +865,7 @@ Lưu ý quan trọng:
     async function callOpenAIStream(messages, onChunk) {
         const apiKey = getApiKey();
         const model = getModel();
-        
+
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
             method: "POST",
             headers: {
@@ -853,25 +879,25 @@ Lưu ý quan trọng:
                 temperature: 0.2
             })
         });
-        
+
         if (!response.ok) {
             const errText = await response.text();
             throw new Error(errText || "API call failed");
         }
-        
+
         const reader = response.body.getReader();
         const decoder = new TextDecoder("utf-8");
         let buffer = "";
         let fullText = "";
-        
+
         while (true) {
             const { value, done } = await reader.read();
             if (done) break;
-            
+
             buffer += decoder.decode(value, { stream: true });
             const lines = buffer.split("\n");
             buffer = lines.pop(); // Keep the last partial line
-            
+
             for (const line of lines) {
                 const cleanLine = line.trim();
                 if (!cleanLine) continue;
@@ -890,7 +916,7 @@ Lưu ý quan trọng:
                 }
             }
         }
-        
+
         return fullText;
     }
 
@@ -910,12 +936,12 @@ Lưu ý quan trọng:
     function addRelatedQuestionsMetadata(botMsgId, query) {
         const results = searchEngine.search(query, 5);
         if (results.length === 0) return;
-        
+
         const bestResult = results[0];
         const confidence = Math.min(Math.round(bestResult.score * 100), 99);
         const confidenceLevel = confidence >= 60 ? 'high' : confidence >= 30 ? 'medium' : 'low';
         const confidenceEmoji = confidence >= 60 ? '🟢' : confidence >= 30 ? '🟡' : '🔴';
-        
+
         const metaHtml = `
             <div class="answer-meta" style="animation: fade-in 0.3s ease-out;">
                 <span class="confidence-badge confidence-${confidenceLevel}">
@@ -926,21 +952,21 @@ Lưu ý quan trọng:
                 </span>
             </div>
         `;
-        
+
         let relatedHtml = '';
         const relatedResults = results.slice(1, 4).filter(r => r.score > 0.08);
         if (relatedResults.length > 0) {
             relatedHtml = `<div class="related-questions" style="animation: fade-in 0.3s ease-out;">
                 <div class="related-title">📌 Câu hỏi liên quan:</div>`;
             relatedResults.forEach(r => {
-                const shortQ = r.faq.question.length > 65 
-                    ? r.faq.question.substring(0, 65) + '...' 
+                const shortQ = r.faq.question.length > 65
+                    ? r.faq.question.substring(0, 65) + '...'
                     : r.faq.question;
                 relatedHtml += `<div class="related-chip" onclick="window.askRelatedQuestion('${escapeHtml(r.faq.question).replace(/'/g, "\\'")}')">${shortQ}</div>`;
             });
             relatedHtml += `</div>`;
         }
-        
+
         let supportBtn = '';
         if (confidence < 40) {
             supportBtn = `
@@ -949,7 +975,7 @@ Lưu ý quan trọng:
                 </div>
             `;
         }
-        
+
         const bubbleEl = document.querySelector(`#${botMsgId} .msg-bubble`);
         if (bubbleEl) {
             bubbleEl.insertAdjacentHTML("beforeend", metaHtml + relatedHtml + supportBtn);
@@ -958,19 +984,47 @@ Lưu ý quan trọng:
     }
 
     // ===== Related Questions Handlers =====
-    window.askRelatedQuestion = function(question) {
+    window.askRelatedQuestion = function (question) {
         addUserMessage(question);
         processQuery(question);
     };
 
     // ===== Mock human support agent takeover =====
-    window.connectToAgent = function() {
+    window.connectToAgent = function () {
+        // Mock Error Case: Agent Busy on first attempt
+        if (agentBusyMode) {
+            agentBusyMode = false; // Next attempt will succeed
+
+            const timeStr = getCurrentTime();
+            const busyHtml = `
+                <div class="message bot">
+                    <div class="msg-bubble">
+                        <div class="agent-busy-alert">
+                            <div class="agent-busy-icon">⏳</div>
+                            <div class="agent-busy-title">Tổng đài viên đang bận</div>
+                            <div class="agent-busy-desc">Rất tiếc, hiện tại <strong>tất cả các Tổng đài viên</strong> đều đang bận phục vụ khách hàng khác.</div>
+                            <div class="agent-busy-question">Quý khách có muốn tôi hỗ trợ tra cứu thông tin khác không?</div>
+                            <div class="agent-busy-buttons">
+                                <button class="agent-busy-btn agent-busy-btn-yes" onclick="window.handleAgentBusyChoice('yes')">✅ Có, tôi muốn hỏi câu khác</button>
+                                <button class="agent-busy-btn agent-busy-btn-no" onclick="window.handleAgentBusyChoice('no')">⏰ Không, tôi sẽ đợi</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="msg-time">${timeStr}</div>
+                </div>
+            `;
+            chatMessages.insertAdjacentHTML("beforeend", busyHtml);
+            scrollToBottom();
+            return;
+        }
+
+        // Success case: connect to agent
         isAgentConnected = true;
-        
+
         const botName = document.querySelector(".bot-info h3");
         const botStatus = document.querySelector(".bot-info p");
         const botAvatar = document.querySelector(".bot-avatar");
-        
+
         if (botName) botName.textContent = "Hỗ Trợ Viên: Thu Trang";
         if (botStatus) {
             botStatus.textContent = "Đang trực tuyến";
@@ -1001,11 +1055,78 @@ Lưu ý quan trọng:
             "Dạ, đối với thắc mắc này của quý khách, ngoài việc xem online, quý khách cũng có thể liên hệ số hotline 1800-588822 bất cứ lúc nào, các bạn tổng đài viên chuyên trách sẽ tra cứu chi tiết số dư và biểu phí giao dịch cụ thể của riêng tài khoản quý khách nhé ạ.",
             "Tôi có thể hỗ trợ kiểm tra thêm thông tin dịch vụ này giúp quý khách. Quý khách có thể cho tôi xin tên đầy đủ để tiện xưng hô không ạ?"
         ];
-        
+
         const randomAnswer = agentAnswers[Math.floor(Math.random() * agentAnswers.length)];
         setTimeout(() => {
             addBotMessage(randomAnswer);
         }, 1000);
+    }
+
+    // ===== Agent Busy Choice Handler =====
+    window.handleAgentBusyChoice = function(choice) {
+        // Disable all busy buttons after clicking
+        document.querySelectorAll('.agent-busy-btn').forEach(btn => {
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
+            btn.style.pointerEvents = 'none';
+        });
+
+        if (choice === 'yes') {
+            addBotMessage("Dạ được ạ! Quý khách cứ thoải mái đặt câu hỏi, tôi sẽ hỗ trợ tra cứu ngay. 😊");
+        } else {
+            addBotMessage(
+                "Cảm ơn quý khách đã kiên nhẫn! 🙏\n\n" +
+                "Vui lòng thử nhấn nút **[Kết nối hỗ trợ viên]** lại sau khoảng **1-2 phút**. Chúng tôi sẽ kết nối quý khách với tổng đài viên sớm nhất có thể.\n\n" +
+                "Trong lúc chờ đợi, quý khách có thể hỏi tôi bất kỳ câu hỏi nào — tôi sẽ hỗ trợ tra cứu thông tin ngay!"
+            );
+        }
+    };
+
+    // ===== Card Lock Flow via Agent =====
+    function simulateAgentCardLockFlow() {
+        pendingCardLock = true;
+        setTimeout(() => {
+            addBotMessage(
+                "Dạ, tôi hiểu quý khách muốn **khóa thẻ** để bảo vệ tài sản. Để tiến hành, tôi cần quý khách xác nhận thông tin:\n\n" +
+                "💳 Thẻ: **Visa Debit ****8742**\n" +
+                "👤 Chủ thẻ: **GIANG THANH CONG**\n\n" +
+                "Vui lòng gõ **'Đồng ý'** để khóa thẻ ngay lập tức, hoặc **'Hủy'** để hủy yêu cầu."
+            );
+        }, 1000);
+    }
+
+    function showCardLockSuccess() {
+        pendingCardLock = false;
+        const now = new Date();
+        const timeStr = getCurrentTime();
+        const dateStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+
+        const successHtml = `
+            <div class="message bot">
+                <div class="msg-bubble">
+                    <div class="card-lock-success">
+                        <div class="card-lock-icon">🔒</div>
+                        <div class="card-lock-title">KHÓA THẺ THÀNH CÔNG</div>
+                        <div class="card-lock-details">
+                            <div class="card-lock-row"><span>Thẻ:</span> <strong>Visa Debit ****8742</strong></div>
+                            <div class="card-lock-row"><span>Trạng thái:</span> <strong style="color: #e74c3c;">Đã khóa tạm thời</strong></div>
+                            <div class="card-lock-row"><span>Thời gian:</span> <strong>${timeStr} — ${dateStr}</strong></div>
+                        </div>
+                        <div class="card-lock-info">
+                            ℹ️ Để mở khóa thẻ, quý khách có thể gọi <strong>1800 588 822</strong> hoặc đến chi nhánh Techcombank gần nhất.
+                        </div>
+                    </div>
+                </div>
+                <div class="msg-time">${timeStr}</div>
+            </div>
+        `;
+        chatMessages.insertAdjacentHTML("beforeend", successHtml);
+        scrollToBottom();
+
+        setTimeout(() => {
+            addBotMessage("Thẻ của quý khách đã được khóa an toàn. Quý khách có cần hỗ trợ gì thêm không ạ?");
+        }, 1500);
     }
 
     // ===== UI Utility Helpers =====
@@ -1032,13 +1153,13 @@ Lưu ý quan trọng:
 
 // Helper: Normalize Vietnamese strings for matching (global scope for TF-IDF class)
 function removeVietnameseTones(str) {
-    str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g,"a"); 
-    str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g,"e"); 
-    str = str.replace(/ì|í|ị|ỉ|ĩ/g,"i"); 
-    str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g,"o"); 
-    str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g,"u"); 
-    str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g,"y"); 
-    str = str.replace(/đ/g,"d");
+    str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a");
+    str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, "e");
+    str = str.replace(/ì|í|ị|ỉ|ĩ/g, "i");
+    str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, "o");
+    str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u");
+    str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y");
+    str = str.replace(/đ/g, "d");
     str = str.replace(/À|Á|Ạ|Ả|Ã|Â|Ầ|Ấ|Ậ|Ẩ|Ẫ|Ă|Ằ|Ắ|Ặ|Ẳ|Ẵ/g, "A");
     str = str.replace(/È|É|Ẹ|Ẻ|Ẽ|Ê|Ề|Ế|Ệ|Ể|Ễ/g, "E");
     str = str.replace(/Ì|Í|Ị|Ỉ|Ĩ/g, "I");
@@ -1046,7 +1167,7 @@ function removeVietnameseTones(str) {
     str = str.replace(/Ù|Ú|Ụ|Ủ|Ũ|Ư|Ừ|Ứ|Ự|Ử|Ữ/g, "U");
     str = str.replace(/Ỳ|Ý|Ỵ|Ỷ|Ỹ/g, "Y");
     str = str.replace(/Đ/g, "D");
-    str = str.replace(/ + /g," ");
+    str = str.replace(/ + /g, " ");
     str = str.trim();
     return str;
 }
