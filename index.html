@@ -448,14 +448,22 @@
     <div class="settings-modal" id="settingsModal" style="display:none;">
         <div class="settings-modal-content">
             <div class="settings-modal-header">
-                <h3><i class="fa-solid fa-gear"></i> Cấu hình OpenAI API</h3>
+                <h3><i class="fa-solid fa-gear"></i> Cấu hình AI API</h3>
                 <span class="close-settings" id="closeSettingsBtn">&times;</span>
             </div>
             <div class="settings-modal-body">
-                <p class="settings-desc">Nhập OpenAI API Key để kích hoạt chatbot thông minh sử dụng mô hình ReAct Agent. API Key của bạn được lưu an toàn trong trình duyệt (localStorage).</p>
+                <p class="settings-desc">Cấu hình API Key của OpenAI hoặc Groq để kích hoạt chatbot thông minh sử dụng mô hình ReAct Agent. Khóa của bạn được lưu an toàn trong trình duyệt (localStorage).</p>
                 
                 <div class="settings-group">
-                    <label for="apiKeyInput">OpenAI API Key:</label>
+                    <label for="providerSelect">Nhà cung cấp (Provider):</label>
+                    <select id="providerSelect">
+                        <option value="openai" selected>OpenAI (sk-...)</option>
+                        <option value="groq">Groq Cloud (gsk_...)</option>
+                    </select>
+                </div>
+
+                <div class="settings-group">
+                    <label for="apiKeyInput" id="apiKeyLabel">API Key:</label>
                     <div class="password-input-wrapper">
                         <input type="password" id="apiKeyInput" placeholder="sk-proj-..." />
                         <i class="fa-regular fa-eye-slash toggle-api-key-eye" id="toggleApiKeyVisibility"></i>
@@ -463,17 +471,15 @@
                 </div>
 
                 <div class="settings-group">
-                    <label for="modelSelect">Mô hình GPT:</label>
+                    <label for="modelSelect">Mô hình AI (Model):</label>
                     <select id="modelSelect">
-                        <option value="gpt-4o-mini" selected>gpt-4o-mini (Khuyên dùng - Nhanh & Tiết kiệm)</option>
-                        <option value="gpt-4o">gpt-4o (Thông minh nhất)</option>
-                        <option value="gpt-3.5-turbo">gpt-3.5-turbo (Cũ hơn)</option>
+                        <!-- Options populated dynamically by JS -->
                     </select>
                 </div>
                 
                 <div class="settings-actions">
                     <button class="settings-save-btn" id="saveSettingsBtn">Lưu Cấu Hình</button>
-                    <button class="settings-clear-btn" id="clearSettingsBtn">Xóa Key</button>
+                    <button class="settings-clear-btn" id="clearSettingsBtn">Xóa Cấu Hình</button>
                 </div>
             </div>
         </div>

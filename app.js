@@ -25,15 +25,39 @@ document.addEventListener("DOMContentLoaded", () => {
     const clearSettingsBtn = document.getElementById("clearSettingsBtn");
     const apiKeyInput = document.getElementById("apiKeyInput");
     const modelSelect = document.getElementById("modelSelect");
+    const providerSelect = document.getElementById("providerSelect");
     const toggleApiKeyVisibility = document.getElementById("toggleApiKeyVisibility");
 
-    // ===== Helper functions to get API Key and Model =====
+    const modelsByProvider = {
+        openai: [
+            { value: "gpt-4o-mini", label: "gpt-4o-mini (Khuyên dùng - Nhanh & Tiết kiệm)" },
+            { value: "gpt-4o", label: "gpt-4o (Thông minh nhất)" },
+            { value: "gpt-3.5-turbo", label: "gpt-3.5-turbo (Cũ hơn)" }
+        ],
+        groq: [
+            { value: "llama-3.3-70b-versatile", label: "llama-3.3-70b-versatile (Khuyên dùng - Cực khôn)" },
+            { value: "llama-3.1-8b-instant", label: "llama-3.1-8b-instant (Siêu nhanh)" },
+            { value: "mixtral-8x7b-32768", label: "mixtral-8x7b-32768 (Mixtral 8x7B)" }
+        ]
+    };
+
+    // ===== Helper functions to get API Provider, Key and Model =====
+    function getProvider() {
+        const localProvider = localStorage.getItem("api_provider");
+        if (localProvider === "openai" || localProvider === "groq") {
+            return localProvider;
+        }
+        const key = getApiKey();
+        if (key.startsWith("gsk_")) return "groq";
+        return "openai";
+    }
+
     function getApiKey() {
         const localKey = localStorage.getItem("openai_api_key");
         if (localKey && localKey.trim() !== "") {
             return localKey.trim();
         }
-        const envKey = window.ENV?.OPENAI_API_KEY;
+        const envKey = window.ENV?.OPENAI_API_KEY || window.ENV?.GROQ_API_KEY;
         if (envKey && envKey !== "sk-proj-YOUR_API_KEY_HERE" && envKey.trim() !== "") {
             return envKey.trim();
         }
@@ -45,23 +69,61 @@ document.addEventListener("DOMContentLoaded", () => {
         if (localModel && localModel.trim() !== "") {
             return localModel.trim();
         }
-        const envModel = window.ENV?.OPENAI_MODEL;
+        const envModel = window.ENV?.OPENAI_MODEL || window.ENV?.GROQ_MODEL;
         if (envModel && envModel.trim() !== "") {
             return envModel.trim();
         }
-        return "gpt-4o-mini";
+        return getProvider() === "groq" ? "llama-3.3-70b-versatile" : "gpt-4o-mini";
+    }
+
+    function updateModelDropdown(provider, selectedModel) {
+        if (!modelSelect) return;
+        modelSelect.innerHTML = "";
+        const models = modelsByProvider[provider] || [];
+        models.forEach(m => {
+            const opt = document.createElement("option");
+            opt.value = m.value;
+            opt.textContent = m.label;
+            if (m.value === selectedModel) {
+                opt.selected = true;
+            }
+            modelSelect.appendChild(opt);
+        });
+
+        const apiKeyLabel = document.getElementById("apiKeyLabel");
+        if (apiKeyLabel) {
+            apiKeyLabel.textContent = provider === "groq" ? "Groq API Key:" : "OpenAI API Key:";
+        }
+        if (apiKeyInput) {
+            apiKeyInput.placeholder = provider === "groq" ? "gsk_..." : "sk-proj-...";
+        }
     }
 
     // Load initial settings
+    const initialProvider = getProvider();
+    if (providerSelect) providerSelect.value = initialProvider;
     apiKeyInput.value = getApiKey();
-    modelSelect.value = getModel();
+    updateModelDropdown(initialProvider, getModel());
 
     if (openSettingsBtn) {
         openSettingsBtn.addEventListener("click", (e) => {
             e.stopPropagation();
-            apiKeyInput.value = getApiKey();
-            modelSelect.value = getModel();
+            const provider = getProvider();
+            const key = getApiKey();
+            const model = getModel();
+
+            if (providerSelect) providerSelect.value = provider;
+            apiKeyInput.value = key;
+            updateModelDropdown(provider, model);
             settingsModal.style.display = "flex";
+        });
+    }
+
+    if (providerSelect) {
+        providerSelect.addEventListener("change", () => {
+            const provider = providerSelect.value;
+            const defaultModel = provider === "groq" ? "llama-3.3-70b-versatile" : "gpt-4o-mini";
+            updateModelDropdown(provider, defaultModel);
         });
     }
 
@@ -93,10 +155,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (saveSettingsBtn) {
         saveSettingsBtn.addEventListener("click", () => {
+            const provider = providerSelect ? providerSelect.value : "openai";
             const key = apiKeyInput.value.trim();
             const model = modelSelect.value;
 
             if (key) {
+                localStorage.setItem("api_provider", provider);
                 localStorage.setItem("openai_api_key", key);
                 localStorage.setItem("openai_model", model);
                 alert("Đã lưu cấu hình API thành công!");
@@ -109,10 +173,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (clearSettingsBtn) {
         clearSettingsBtn.addEventListener("click", () => {
+            localStorage.removeItem("api_provider");
             localStorage.removeItem("openai_api_key");
             localStorage.removeItem("openai_model");
             apiKeyInput.value = "";
-            alert("Đã xóa API Key.");
+            if (providerSelect) providerSelect.value = "openai";
+            updateModelDropdown("openai", "gpt-4o-mini");
+            alert("Đã xóa cấu hình API.");
             settingsModal.style.display = "none";
         });
     }
@@ -865,10 +932,16 @@ Lưu ý quan trọng về phạm vi hỗ trợ:
     }
 
     async function callOpenAIStream(messages, onChunk) {
+        const provider = getProvider();
         const apiKey = getApiKey();
         const model = getModel();
 
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        let url = "https://api.openai.com/v1/chat/completions";
+        if (provider === "groq") {
+            url = "https://api.groq.com/openai/v1/chat/completions";
+        }
+
+        const response = await fetch(url, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
